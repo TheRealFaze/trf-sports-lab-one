@@ -10,6 +10,16 @@ from .structural import (
     LambdaPrediction,
     StructuralForecast,
 )
+from .backtest import (
+    WalkForwardConfig,
+    WalkForwardPrediction,
+    Historical1X2Quote,
+    walk_forward_predict,
+    walk_forward_market_blend,
+    summarize_predictions,
+    calibration_bins,
+    betting_summary,
+)
 
 __all__ = [
     "devig",
@@ -25,4 +35,12 @@ __all__ = [
     "StructuralConfig",
     "LambdaPrediction",
     "StructuralForecast",
+    "WalkForwardConfig",
+    "WalkForwardPrediction",
+    "Historical1X2Quote",
+    "walk_forward_predict",
+    "walk_forward_market_blend",
+    "summarize_predictions",
+    "calibration_bins",
+    "betting_summary",
 ]
