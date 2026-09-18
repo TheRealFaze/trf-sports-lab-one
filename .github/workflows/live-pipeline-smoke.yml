@@ -1,0 +1,43 @@
+name: live-pipeline-smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "trf_one/live_market.py"
+      - "scripts/live_one.py"
+      - "examples/live_odds_sample.json"
+      - ".github/workflows/live-pipeline-smoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "trf_one/live_market.py"
+      - "scripts/live_one.py"
+      - "examples/live_odds_sample.json"
+      - ".github/workflows/live-pipeline-smoke.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Run offline live pipeline
+        run: |
+          python scripts/live_one.py \
+            --payload-json examples/live_odds_sample.json \
+            --markets h2h,totals \
+            --min-books 3 \
+            --queue-top 3 \
+            --output-dir live_smoke
+          test -f live_smoke/live_scan.json
+          test -f live_smoke/execution_queue.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: live-pipeline-smoke
+          path: live_smoke/
+          retention-days: 7
