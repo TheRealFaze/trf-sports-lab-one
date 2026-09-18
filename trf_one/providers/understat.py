@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Iterable, List
 from urllib.request import Request, urlopen
 
-BASE_URL = "https://understat.com/league/{league}/{season}"
+BASE_URL = "https://understat.com/getLeagueData/{league}/{season}"
 
 FOOTBALL_DATA_TO_UNDERSTAT = {
     "E0": "EPL",
