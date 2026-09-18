@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 — Data-provider layer
+- Selected Football-Data.co.uk as the free historical bootstrap source.
+- Added keyless Football-Data season download/parser.
+- Prefer market-average closing 1X2 odds when available.
+- Added explicit non-closing fallback classification.
+- Added Sportmonks client for raw fixture/stat/xG retrieval.
+- Added The Odds API client for historical/current multi-book market snapshots.
+- Added per-book de-vig then fair-probability consensus aggregation.
+- Added provider secret handling through environment variables only.
+- Added bootstrap script for 8 European leagues, including Belgian Pro League.
+- Added provider normalization/unit tests and data-provider documentation.
+
 ## 0.3.0 — Walk-forward laboratory
 - Added strictly chronological walk-forward forecasts.
 - Added same-timestamp batching to prevent within-round leakage.
