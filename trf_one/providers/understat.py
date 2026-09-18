@@ -5,7 +5,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Iterable, List, Optional
+from typing import Iterable, List
 from urllib.request import Request, urlopen
 
 BASE_URL = "https://understat.com/league/{league}/{season}"
@@ -64,25 +64,33 @@ def normalize_team_name(value: str) -> str:
 class UnderstatClient:
     """Keyless public Understat match-level xG adapter.
 
-    The league pages embed match-level datesData JSON. We parse only completed
-    matches and never use Understat forecast probabilities as model evidence.
+    Current Understat league endpoints return JSON for XMLHttpRequest requests.
+    A legacy HTML datesData parser is retained as a fallback so historical page
+    responses remain usable. Only completed match xG is consumed.
     """
 
-    def __init__(self, *, timeout: float = 30.0, user_agent: str = "TRF-Sports-Lab-One/0.4") -> None:
+    def __init__(self, *, timeout: float = 30.0, user_agent: str = "TRF-Sports-Lab-One/0.5") -> None:
         self.timeout = timeout
         self.user_agent = user_agent
 
     def url(self, league: str, season: int) -> str:
         return BASE_URL.format(league=league, season=season)
 
-    def fetch_html(self, league: str, season: int) -> str:
-        req = Request(self.url(league, season), headers={"User-Agent": self.user_agent})
+    def fetch_text(self, league: str, season: int) -> str:
+        req = Request(
+            self.url(league, season),
+            headers={
+                "User-Agent": self.user_agent,
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/json,text/plain,*/*",
+            },
+        )
         with urlopen(req, timeout=self.timeout) as response:
             return response.read().decode("utf-8", errors="replace")
 
     @staticmethod
-    def _decode_dates_data(html: str) -> list:
-        match = re.search(r"datesData\s*=\s*JSON\.parse\('(.*?)'\)", html, flags=re.S)
+    def _legacy_html_dates_data(text: str) -> list:
+        match = re.search(r"datesData\s*=\s*JSON\.parse\('(.*?)'\)", text, flags=re.S)
         if not match:
             raise ValueError("Understat datesData payload not found")
         encoded = match.group(1)
@@ -92,22 +100,70 @@ class UnderstatClient:
             encoded,
         )
         decoded = decoded.replace("\\'", "'").replace("\\\\", "\\")
-        return json.loads(decoded)
+        payload = json.loads(decoded)
+        if not isinstance(payload, list):
+            raise ValueError("Legacy Understat datesData is not a list")
+        return payload
 
-    def parse_league(self, html: str, *, league: str, season: int) -> List[UnderstatXGMatch]:
-        data = self._decode_dates_data(html)
+    @classmethod
+    def _decode_dates_data(cls, text: str) -> list:
+        stripped = text.lstrip()
+        if stripped:
+            try:
+                payload = json.loads(stripped)
+            except json.JSONDecodeError:
+                payload = None
+
+            if isinstance(payload, list):
+                return payload
+            if isinstance(payload, dict):
+                candidates = (
+                    payload.get("dates"),
+                    payload.get("datesData"),
+                    (payload.get("data") or {}).get("dates")
+                    if isinstance(payload.get("data"), dict)
+                    else None,
+                )
+                for candidate in candidates:
+                    if isinstance(candidate, list):
+                        return candidate
+                    if isinstance(candidate, dict) and isinstance(candidate.get("dates"), list):
+                        return candidate["dates"]
+
+        return cls._legacy_html_dates_data(text)
+
+    @staticmethod
+    def _parse_datetime(value: str) -> datetime:
+        raw = str(value).strip()
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ"):
+            try:
+                parsed = datetime.strptime(raw, fmt)
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed.astimezone(timezone.utc)
+            except ValueError:
+                continue
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+        except ValueError as exc:
+            raise ValueError(f"Unsupported Understat datetime: {value}") from exc
+
+    def parse_league(self, text: str, *, league: str, season: int) -> List[UnderstatXGMatch]:
+        data = self._decode_dates_data(text)
         out: List[UnderstatXGMatch] = []
         for item in data:
-            if not item.get("isResult"):
+            if not isinstance(item, dict) or not item.get("isResult"):
                 continue
             try:
-                date = datetime.strptime(item["datetime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
                 out.append(
                     UnderstatXGMatch(
                         league=league,
                         season=season,
                         match_id=str(item["id"]),
-                        date=date,
+                        date=self._parse_datetime(item["datetime"]),
                         home_team=str(item["h"]["title"]),
                         away_team=str(item["a"]["title"]),
                         home_goals=int(item["goals"]["h"]),
@@ -121,7 +177,7 @@ class UnderstatClient:
         return out
 
     def fetch_league(self, league: str, season: int) -> List[UnderstatXGMatch]:
-        return self.parse_league(self.fetch_html(league, season), league=league, season=season)
+        return self.parse_league(self.fetch_text(league, season), league=league, season=season)
 
     def fetch_many(self, leagues: Iterable[str], seasons: Iterable[int]) -> List[UnderstatXGMatch]:
         out: List[UnderstatXGMatch] = []
