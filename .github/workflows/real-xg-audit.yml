@@ -1,0 +1,51 @@
+name: real-xg-audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/real-xg-audit.yml"
+      - "trf_one/providers/understat.py"
+      - "scripts/bootstrap_understat_xg.py"
+      - "scripts/run_real_xg_audit.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Bootstrap Football-Data closing market
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/xg \
+            --divisions E0 D1 I1 SP1 F1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Bootstrap Understat real xG
+        run: |
+          python scripts/bootstrap_understat_xg.py \
+            --output data/xg/understat_xg.csv \
+            --divisions E0 D1 I1 SP1 F1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Run real xG walk-forward audit
+        run: |
+          python scripts/run_real_xg_audit.py \
+            --matches data/xg/matches.csv \
+            --odds data/xg/odds_1x2.csv \
+            --xg data/xg/understat_xg.csv \
+            --output data/xg/real_xg_audit.json
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-real-xg-audit
+          path: data/xg/real_xg_audit.json
+          retention-days: 30
