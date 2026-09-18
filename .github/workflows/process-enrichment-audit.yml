@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/process-enrichment-audit.yml"
+      - "scripts/run_process_enrichment_audit.py"
+      - "trf_one/process_model.py"
+      - "trf_one/providers/football_data_uk.py"
 
 permissions:
   contents: read
@@ -13,7 +16,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,7 +30,7 @@ jobs:
             --output data/process \
             --divisions E0 B1 D1 I1 SP1 F1 N1 P1 \
             --years 2019 2020 2021 2022 2023 2024 2025
-      - name: Run process enrichment audit
+      - name: Run quarterly process enrichment audit
         run: |
           python scripts/run_process_enrichment_audit.py \
             --process data/process/process.csv \
