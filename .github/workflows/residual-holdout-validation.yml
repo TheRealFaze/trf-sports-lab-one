@@ -1,0 +1,43 @@
+name: residual-holdout-validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/residual-holdout-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Bootstrap holdout competitions
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/holdout \
+            --divisions D1 I1 SP1 F1 N1 P1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Run frozen residual diagnostics
+        run: |
+          python scripts/run_residual_diagnostics.py \
+            --matches data/holdout/matches.csv \
+            --odds data/holdout/odds_1x2.csv \
+            --output data/holdout/residual_holdout.json
+      - name: Upload holdout report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-residual-holdout
+          path: |
+            data/holdout/residual_holdout.json
+            data/holdout/quality.csv
+          retention-days: 30
