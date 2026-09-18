@@ -67,6 +67,7 @@ def active_soccer_keys(client: TheOddsAPIClient) -> List[str]:
 def main() -> None:
     p = argparse.ArgumentParser(description="T.R.F ONE real-time market-first scanner")
     p.add_argument("--sports", nargs="+", help="The Odds API sport keys")
+    p.add_argument("--payload-json", help="Offline/current-odds JSON fixture for smoke tests or manual fallback")
     p.add_argument("--list-sports", action="store_true")
     p.add_argument("--regions", default="eu,uk")
     p.add_argument("--markets", default="h2h,totals")
@@ -85,8 +86,8 @@ def main() -> None:
             print(key)
         return
 
-    if not args.sports:
-        p.error("--sports is required unless --list-sports is used")
+    if not args.sports and not args.payload_json:
+        p.error("--sports is required unless --list-sports or --payload-json is used")
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -95,28 +96,50 @@ def main() -> None:
     quotes = []
     snapshots = []
 
-    for sport in args.sports:
-        print(f"Fetching {sport} ...", flush=True)
-        payload = client.current_odds(
-            sport=sport,
-            regions=args.regions,
-            markets=args.markets,
+    if args.payload_json:
+        raw = json.loads(Path(args.payload_json).read_text(encoding="utf-8"))
+        sport = str(raw.get("sport") or (args.sports[0] if args.sports else "offline"))
+        from datetime import datetime, timezone
+        fetched_raw = raw.get("fetched_at")
+        fetched_at = (
+            datetime.fromisoformat(str(fetched_raw).replace("Z", "+00:00"))
+            if fetched_raw else datetime.now(timezone.utc)
         )
-        snapshots.append({
-            "sport": sport,
-            "fetched_at": payload.fetched_at.isoformat(),
-            "events": len(payload.events),
-        })
+        events = raw.get("events") or []
+        snapshots.append({"sport": sport, "fetched_at": fetched_at.isoformat(), "events": len(events)})
         quotes.extend(
             build_consensus_quotes(
-                payload.events,
+                events,
                 sport=sport,
-                fetched_at=payload.fetched_at,
+                fetched_at=fetched_at,
                 devig_method=args.devig,
                 min_books=args.min_books,
                 market_keys=market_keys,
             )
         )
+    else:
+        for sport in args.sports:
+            print(f"Fetching {sport} ...", flush=True)
+            payload = client.current_odds(
+                sport=sport,
+                regions=args.regions,
+                markets=args.markets,
+            )
+            snapshots.append({
+                "sport": sport,
+                "fetched_at": payload.fetched_at.isoformat(),
+                "events": len(payload.events),
+            })
+            quotes.extend(
+                build_consensus_quotes(
+                    payload.events,
+                    sport=sport,
+                    fetched_at=payload.fetched_at,
+                    devig_method=args.devig,
+                    min_books=args.min_books,
+                    market_keys=market_keys,
+                )
+            )
 
     queue = build_execution_queue(
         quotes,
@@ -139,7 +162,7 @@ def main() -> None:
         "source": "The Odds API multi-book consensus",
         "execution_default": "Napoleon Sports Belgique",
         "config": {
-            "sports": args.sports,
+            "sports": args.sports or [snapshots[0]["sport"]] if snapshots else [],
             "regions": args.regions,
             "markets": list(market_keys),
             "devig_method": args.devig,
