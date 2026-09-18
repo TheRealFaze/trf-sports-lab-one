@@ -29,6 +29,16 @@ from .market_scanner import (
     derive_double_chance_probabilities,
     assess_derived_price,
 )
+from .live_market import (
+    ConsensusQuote,
+    ExecutionQueueItem,
+    ExecutionPrice,
+    LiveAssessment,
+    build_consensus_quotes,
+    build_execution_queue,
+    required_execution_odds,
+    assess_execution_prices,
+)
 
 __all__ = [
     "devig",
@@ -59,4 +69,12 @@ __all__ = [
     "scan_markets",
     "derive_double_chance_probabilities",
     "assess_derived_price",
+    "ConsensusQuote",
+    "ExecutionQueueItem",
+    "ExecutionPrice",
+    "LiveAssessment",
+    "build_consensus_quotes",
+    "build_execution_queue",
+    "required_execution_odds",
+    "assess_execution_prices",
 ]
