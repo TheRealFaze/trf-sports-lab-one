@@ -1,0 +1,6 @@
+fixture_id,kickoff,competition,home_team,away_team,market_group,selection,consensus_odds,execution_odds,consensus_source,execution_source,model_probability
+demo-001,2026-09-18T20:00:00+02:00,DEMO,Alpha,Beta,1X2,H,1.90,2.02,Sharp Consensus,Napoleon,0.54
+demo-001,2026-09-18T20:00:00+02:00,DEMO,Alpha,Beta,1X2,D,3.60,3.55,Sharp Consensus,Napoleon,0.27
+demo-001,2026-09-18T20:00:00+02:00,DEMO,Alpha,Beta,1X2,A,4.20,4.10,Sharp Consensus,Napoleon,0.19
+demo-002,2026-09-18T21:00:00+02:00,DEMO,Gamma,Delta,BTTS,YES,1.78,1.88,Multi-book Consensus,Napoleon,0.58
+demo-002,2026-09-18T21:00:00+02:00,DEMO,Gamma,Delta,BTTS,NO,2.08,2.00,Multi-book Consensus,Napoleon,0.42
