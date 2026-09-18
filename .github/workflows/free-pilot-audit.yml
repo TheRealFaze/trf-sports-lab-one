@@ -1,0 +1,43 @@
+name: free-pilot-audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/free-pilot-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Bootstrap historical pilot
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/bootstrap \
+            --divisions E0 B1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Run real walk-forward pilot
+        run: |
+          python scripts/run_free_pilot_audit.py \
+            --matches data/bootstrap/matches.csv \
+            --odds data/bootstrap/odds_1x2.csv \
+            --output data/bootstrap/pilot_audit.json
+      - name: Upload pilot audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-free-pilot-audit
+          path: |
+            data/bootstrap/pilot_audit.json
+            data/bootstrap/quality.csv
+          retention-days: 30
