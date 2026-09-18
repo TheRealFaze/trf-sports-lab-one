@@ -1,16 +1,16 @@
-# T.R.F SPORTS LAB ONE — Engine v0.1
+# T.R.F SPORTS LAB ONE — Engine v0.2
 
-A market-anchored football pricing engine. It is designed to detect potential pricing discrepancies, not to manufacture picks.
+A market-anchored football pricing engine designed to detect potential pricing discrepancies rather than manufacture picks.
 
 ## Pipeline
 
 `DATE LOCK → MARKET MAP → RADAR → STRUCTURAL MODEL → RESIDUAL EDGE → RED TEAM → UNCERTAINTY → EXECUTION PRICE → LEDGER`
 
-## What v0.1 implements
+## v0.1 — pricing core
 
-- proportional, power and Shin de-vig utilities;
+- proportional, power and Shin de-vig;
 - Poisson / Dixon-Coles score matrix;
-- 1X2, double-chance, totals, BTTS and team-to-score probabilities from a score matrix;
+- 1X2, double-chance, totals, BTTS and team-to-score probabilities;
 - market-vs-model edge evaluation;
 - central and prudent EV;
 - fair price / prudent fair price;
@@ -18,25 +18,58 @@ A market-anchored football pricing engine. It is designed to detect potential pr
 - Brier and log-loss components;
 - conservative fractional Kelly helper.
 
-## What v0.1 deliberately does **not** claim
+## v0.2 — structural model
 
-- It does not yet estimate attacking/defensive strengths from a historical dataset.
-- It does not yet calibrate model-market weights from walk-forward data.
-- It does not yet ingest live bookmaker odds automatically.
-- It does not yet contain specialist corner/card/player models.
+- historical match ingestion from a simple CSV contract;
+- strict `as_of` cutoff for walk-forward-safe fitting;
+- exponentially time-decayed matches;
+- learned attack and defence strengths;
+- learned global scoring level and home advantage;
+- deterministic Adam optimisation with L2 regularisation;
+- Dixon-Coles low-score rho fitted on a bounded deterministic grid;
+- optional goals, xG, or goals/xG-blend target;
+- approximate lambda uncertainty that widens for low-sample or unseen teams;
+- deterministic model snapshots and restoration;
+- synthetic tests for strength ordering, cutoff integrity and reproducibility.
 
-Those are subsequent versions and must be validated out of sample.
+## Data contract
+
+Minimum CSV columns:
+
+```
+date,home_team,away_team,home_goals,away_goals
+```
+
+Optional:
+
+```
+home_xg,away_xg
+```
 
 ## Quick start
 
 ```bash
+pip install -e .
 python examples/demo.py
+python examples/structural_demo.py
 pytest -q
 ```
 
+## Current limitations
+
+v0.2 is a structural baseline, not a proven betting edge. In particular:
+
+- model-market blend weights are not calibrated yet;
+- uncertainty is approximate, not posterior uncertainty;
+- no automatic bookmaker-odds ingestion exists yet;
+- no walk-forward performance lab exists yet;
+- corners, cards and player markets still require specialist engines.
+
+Those belong to v0.3+ and must be validated out of sample.
+
 ## Airtable
 
-The persistent research ledger lives in the connected Airtable base **T.R.F SPORTS LAB ONE** with tables:
+The research ledger lives in the connected Airtable base **T.R.F SPORTS LAB ONE**:
 
 - `PICKS`
 - `MARKET SNAPSHOTS`
@@ -45,4 +78,4 @@ The persistent research ledger lives in the connected Airtable base **T.R.F SPOR
 
 ## Governance
 
-The current scientific protocol is in `MASTER_PROTOCOL.txt`. Material changes should receive a new model version and be evaluated walk-forward rather than retrofitted to past results.
+Material changes receive a new model version. No model is promoted from SHADOW to EDGE LAB because of a few winning bets. Promotion depends on walk-forward calibration, CLV, ROI and drawdown evidence.
