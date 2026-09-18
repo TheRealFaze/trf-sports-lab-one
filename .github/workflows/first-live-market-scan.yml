@@ -1,0 +1,48 @@
+name: first-live-market-scan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/first-live-market-scan.yml"
+      - ".github/one-live-trigger.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Require market API secret
+        run: |
+          if [ -z "$THE_ODDS_API_KEY" ]; then
+            echo "Missing repository secret THE_ODDS_API_KEY"
+            exit 1
+          fi
+      - name: Install
+        run: pip install -e .
+      - name: Build first real market map
+        run: |
+          python scripts/live_one.py \
+            --auto-core \
+            --markets h2h,totals \
+            --regions eu,uk \
+            --min-books 3 \
+            --min-ev 0.02 \
+            --queue-top 3 \
+            --output-dir live_output
+      - name: Upload real market map
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-first-live-market-map
+          path: live_output/
+          retention-days: 7

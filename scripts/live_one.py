@@ -14,6 +14,18 @@ from trf_one.live_market import (
 )
 from trf_one.providers.the_odds_api import TheOddsAPIClient
 
+CORE_SPORTS = [
+    "soccer_uefa_champs_league",
+    "soccer_epl",
+    "soccer_spain_la_liga",
+    "soccer_germany_bundesliga",
+    "soccer_italy_serie_a",
+    "soccer_france_ligue_one",
+    "soccer_belgium_first_div",
+    "soccer_netherlands_eredivisie",
+    "soccer_portugal_primeira_liga",
+]
+
 
 def write_queue(path: Path, queue) -> None:
     fields = [
@@ -64,11 +76,21 @@ def active_soccer_keys(client: TheOddsAPIClient) -> List[str]:
     )
 
 
+def active_core_sports(client: TheOddsAPIClient) -> List[str]:
+    active = set(active_soccer_keys(client))
+    return [key for key in CORE_SPORTS if key in active]
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description="T.R.F ONE real-time market-first scanner")
     p.add_argument("--sports", nargs="+", help="The Odds API sport keys")
     p.add_argument("--payload-json", help="Offline/current-odds JSON fixture for smoke tests or manual fallback")
     p.add_argument("--list-sports", action="store_true")
+    p.add_argument(
+        "--auto-core",
+        action="store_true",
+        help="Scan the currently active TRF core football competitions only.",
+    )
     p.add_argument("--regions", default="eu,uk")
     p.add_argument("--markets", default="h2h,totals")
     p.add_argument("--devig", choices=["shin","power","proportional"], default="shin")
@@ -86,8 +108,18 @@ def main() -> None:
             print(key)
         return
 
+    if args.auto_core:
+        if args.payload_json:
+            p.error("--auto-core and --payload-json cannot be combined")
+        if args.sports:
+            p.error("--auto-core and --sports cannot be combined")
+        args.sports = active_core_sports(client)
+        if not args.sports:
+            raise RuntimeError("No TRF core football competitions are currently active in the market feed.")
+        print("Auto-core active sports:", " ".join(args.sports), flush=True)
+
     if not args.sports and not args.payload_json:
-        p.error("--sports is required unless --list-sports or --payload-json is used")
+        p.error("--sports, --auto-core or --payload-json is required unless --list-sports is used")
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -162,7 +194,7 @@ def main() -> None:
         "source": "The Odds API multi-book consensus",
         "execution_default": "Napoleon Sports Belgique",
         "config": {
-            "sports": args.sports or [snapshots[0]["sport"]] if snapshots else [],
+            "sports": args.sports if args.sports else ([snapshots[0]["sport"]] if snapshots else []),
             "regions": args.regions,
             "markets": list(market_keys),
             "devig_method": args.devig,
