@@ -1,0 +1,41 @@
+name: residual-diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/residual-diagnostics.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  residuals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Bootstrap historical data
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/bootstrap \
+            --divisions E0 B1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Run residual diagnostics
+        run: |
+          python scripts/run_residual_diagnostics.py \
+            --matches data/bootstrap/matches.csv \
+            --odds data/bootstrap/odds_1x2.csv \
+            --output data/bootstrap/residual_diagnostics.json
+      - name: Upload residual report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-residual-diagnostics
+          path: data/bootstrap/residual_diagnostics.json
+          retention-days: 30
