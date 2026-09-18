@@ -1,0 +1,37 @@
+name: free-history-bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/bootstrap-free-history.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Download free historical pilot
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/bootstrap \
+            --divisions E0 B1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Summarize quality
+        run: python scripts/summarize_bootstrap.py
+      - name: Upload normalized historical pilot
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-free-history-pilot
+          path: data/bootstrap/
+          retention-days: 30
