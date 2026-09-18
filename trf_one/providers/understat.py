@@ -80,13 +80,18 @@ class UnderstatClient:
         req = Request(
             self.url(league, season),
             headers={
-                "User-Agent": self.user_agent,
+                "User-Agent": "Mozilla/5.0",
                 "X-Requested-With": "XMLHttpRequest",
+                "Referer": f"https://understat.com/league/{league}/{season}",
                 "Accept": "application/json,text/plain,*/*",
+                "Accept-Encoding": "gzip",
             },
         )
         with urlopen(req, timeout=self.timeout) as response:
-            return response.read().decode("utf-8", errors="replace")
+            body = response.read()
+            if response.headers.get("Content-Encoding") == "gzip" or body[:2] == b"\\x1f\\x8b":
+                body = gzip.decompress(body)
+            return body.decode("utf-8", errors="replace")
 
     @staticmethod
     def _legacy_html_dates_data(text: str) -> list:
