@@ -26,7 +26,6 @@ DIVISIONS = {
 
 
 def season_code(start_year: int) -> str:
-    """Football-Data season path, e.g. 2025 -> '2526'."""
     if start_year < 1993 or start_year > 2098:
         raise ValueError("start_year looks invalid")
     return f"{start_year % 100:02d}{(start_year + 1) % 100:02d}"
@@ -42,7 +41,7 @@ def _parse_date(value: str) -> datetime:
     raise ValueError(f"Unsupported Football-Data date: {value!r}")
 
 
-def _float(row: dict[str, str], key: str) -> Optional[float]:
+def _odds_float(row: dict[str, str], key: str) -> Optional[float]:
     value = (row.get(key) or "").strip()
     if not value:
         return None
@@ -51,6 +50,40 @@ def _float(row: dict[str, str], key: str) -> Optional[float]:
     except ValueError:
         return None
     return x if x > 1.0 else None
+
+
+def _stat_float(row: dict[str, str], key: str) -> Optional[float]:
+    value = (row.get(key) or "").strip()
+    if not value:
+        return None
+    try:
+        x = float(value)
+    except ValueError:
+        return None
+    return x if x >= 0 else None
+
+
+@dataclass(frozen=True)
+class ProcessMatchRecord:
+    date: datetime
+    home_team: str
+    away_team: str
+    home_goals: float
+    away_goals: float
+    home_shots: float
+    away_shots: float
+    home_sot: float
+    away_sot: float
+    home_corners: float
+    away_corners: float
+
+    def __post_init__(self) -> None:
+        values = (
+            self.home_goals, self.away_goals, self.home_shots, self.away_shots,
+            self.home_sot, self.away_sot, self.home_corners, self.away_corners,
+        )
+        if any(v < 0 for v in values):
+            raise ValueError("Process statistics must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -63,6 +96,8 @@ class FootballDataQuality:
     skipped_rows: int
     duplicate_matches: int
     quote_source_counts: dict[str, int]
+    process_matches: int = 0
+    missing_process_rows: int = 0
 
 
 @dataclass(frozen=True)
@@ -72,17 +107,17 @@ class FootballDataSeason:
     matches: List[MatchRecord]
     quotes: List[Historical1X2Quote]
     quality: FootballDataQuality
+    process_matches: List[ProcessMatchRecord]
 
 
 class FootballDataUKClient:
     """Free keyless historical bootstrap provider.
 
-    Football-Data is used as a bootstrap/backtest source, not as a live execution
-    source. Closing-average odds are preferred when available. Unsuffixed odds are
-    explicitly marked as non-closing fallback snapshots.
+    Football-Data is used for historical backtesting. Match-process fields are
+    taken only when the six required shot/corner columns are present and valid.
     """
 
-    def __init__(self, *, timeout: float = 30.0, user_agent: str = "TRF-Sports-Lab-One/0.3") -> None:
+    def __init__(self, *, timeout: float = 30.0, user_agent: str = "TRF-Sports-Lab-One/0.4") -> None:
         self.timeout = timeout
         self.user_agent = user_agent
 
@@ -105,9 +140,10 @@ class FootballDataUKClient:
             raise ValueError(f"Football-Data CSV missing required columns: {sorted(missing)}")
 
         matches: List[MatchRecord] = []
+        process: List[ProcessMatchRecord] = []
         quotes: List[Historical1X2Quote] = []
         seen = set()
-        duplicates = skipped = closing = fallback = 0
+        duplicates = skipped = closing = fallback = missing_process = 0
         source_counts: dict[str, int] = {}
 
         for row in reader:
@@ -125,6 +161,18 @@ class FootballDataUKClient:
                     continue
                 seen.add(key)
                 matches.append(MatchRecord(date, home, away, hg, ag))
+
+                stats = [_stat_float(row, c) for c in ("HS", "AS", "HST", "AST", "HC", "AC")]
+                if all(x is not None for x in stats):
+                    process.append(ProcessMatchRecord(
+                        date=date, home_team=home, away_team=away,
+                        home_goals=hg, away_goals=ag,
+                        home_shots=float(stats[0]), away_shots=float(stats[1]),
+                        home_sot=float(stats[2]), away_sot=float(stats[3]),
+                        home_corners=float(stats[4]), away_corners=float(stats[5]),
+                    ))
+                else:
+                    missing_process += 1
 
                 quote = self._select_quote(row, date, home, away)
                 if quote is not None:
@@ -146,18 +194,15 @@ class FootballDataUKClient:
             skipped_rows=skipped,
             duplicate_matches=duplicates,
             quote_source_counts=source_counts,
+            process_matches=len(process),
+            missing_process_rows=missing_process,
         )
-        return FootballDataSeason(division, start_year, matches, quotes, quality)
+        return FootballDataSeason(division, start_year, matches, quotes, quality, process)
 
     @staticmethod
     def _select_quote(
-        row: dict[str, str],
-        date: datetime,
-        home: str,
-        away: str,
+        row: dict[str, str], date: datetime, home: str, away: str
     ) -> Optional[Historical1X2Quote]:
-        # Prefer market-average closing odds: avoids stitching "Max" prices from
-        # different books and is less dependent on a single bookmaker.
         candidates: Sequence[Tuple[str, Tuple[str, str, str], str]] = (
             ("FootballData Avg Close", ("AvgCH", "AvgCD", "AvgCA"), "CLOSE"),
             ("Bet365 Close", ("B365CH", "B365CD", "B365CA"), "CLOSE"),
@@ -167,27 +212,14 @@ class FootballDataUKClient:
             ("Pinnacle Snapshot", ("PSH", "PSD", "PSA"), "CURRENT"),
         )
         for source, cols, snapshot in candidates:
-            odds = [_float(row, c) for c in cols]
+            odds = [_odds_float(row, c) for c in cols]
             if all(x is not None for x in odds):
                 return Historical1X2Quote(
-                    date=date,
-                    home_team=home,
-                    away_team=away,
-                    home_odds=float(odds[0]),
-                    draw_odds=float(odds[1]),
-                    away_odds=float(odds[2]),
-                    bookmaker=source,
-                    snapshot_type=snapshot,
+                    date=date, home_team=home, away_team=away,
+                    home_odds=float(odds[0]), draw_odds=float(odds[1]), away_odds=float(odds[2]),
+                    bookmaker=source, snapshot_type=snapshot,
                 )
         return None
 
-    def fetch_many(
-        self,
-        divisions: Iterable[str],
-        start_years: Iterable[int],
-    ) -> List[FootballDataSeason]:
-        out = []
-        for year in start_years:
-            for division in divisions:
-                out.append(self.fetch_season(division, year))
-        return out
+    def fetch_many(self, divisions: Iterable[str], start_years: Iterable[int]) -> List[FootballDataSeason]:
+        return [self.fetch_season(d, y) for y in start_years for d in divisions]
