@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — Operational market-first scanner
+- Added generic scanner for mutually exclusive market groups.
+- Added consensus de-vig vs execution-price comparison.
+- Added SHADOW VALUE / PASS gate from prudent execution EV.
+- Default model weight remains zero after failed OOS model validation.
+- Experimental model probabilities can trigger a Red-Team veto.
+- Added double-chance probability derivation from fair 1X2 probabilities.
+- Added CSV/JSON launch CLI, example input and tests.
+
 ## 0.5.0 — Real xG research layer
 - Added keyless Understat match-level xG adapter for EPL, Bundesliga, Serie A, La Liga and Ligue 1.
 - Added deterministic cross-provider team/date/score alignment against Football-Data closing markets.
