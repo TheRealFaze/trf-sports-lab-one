@@ -33,11 +33,19 @@ class OddsConsensus1X2:
         return self.fair_home, self.fair_draw, self.fair_away
 
 
-class TheOddsAPIClient:
-    """Historical/current market adapter.
+@dataclass(frozen=True)
+class CurrentOddsPayload:
+    sport: str
+    fetched_at: datetime
+    events: List[dict]
 
-    API key is read from THE_ODDS_API_KEY by default. Historical endpoints require
-    a paid plan according to the provider documentation.
+
+class TheOddsAPIClient:
+    """Historical/current multi-book market adapter.
+
+    API key is read from THE_ODDS_API_KEY by default. ONE consumes raw odds and
+    performs its own de-vig/consensus calculations; provider predictions are never
+    treated as primary evidence.
     """
 
     def __init__(self, api_key: Optional[str] = None, *, timeout: float = 30.0) -> None:
@@ -52,13 +60,52 @@ class TheOddsAPIClient:
             )
         return self.api_key
 
-    def _get(self, path: str, params: Mapping[str, str]) -> dict:
+    def _get_any(self, path: str, params: Mapping[str, str]) -> object:
         query = dict(params)
         query["apiKey"] = self._key()
         url = f"{BASE_URL}{path}?{urlencode(query)}"
-        req = Request(url, headers={"User-Agent": "TRF-Sports-Lab-One/0.3"})
+        req = Request(url, headers={"User-Agent": "TRF-Sports-Lab-One/0.7"})
         with urlopen(req, timeout=self.timeout) as response:
             return json.loads(response.read().decode("utf-8"))
+
+    def _get(self, path: str, params: Mapping[str, str]) -> dict:
+        payload = self._get_any(path, params)
+        if not isinstance(payload, dict):
+            raise ValueError("Expected object response from The Odds API")
+        return payload
+
+    def sports(self, *, all_sports: bool = False) -> List[dict]:
+        payload = self._get_any("/sports", {"all": "true" if all_sports else "false"})
+        if not isinstance(payload, list):
+            raise ValueError("Expected list response from /sports")
+        return [x for x in payload if isinstance(x, dict)]
+
+    def current_odds(
+        self,
+        *,
+        sport: str,
+        regions: str = "eu,uk",
+        markets: str = "h2h,totals",
+        odds_format: str = "decimal",
+        date_format: str = "iso",
+        bookmakers: Optional[str] = None,
+    ) -> CurrentOddsPayload:
+        params = {
+            "regions": regions,
+            "markets": markets,
+            "oddsFormat": odds_format,
+            "dateFormat": date_format,
+        }
+        if bookmakers:
+            params["bookmakers"] = bookmakers
+        payload = self._get_any(f"/sports/{sport}/odds", params)
+        if not isinstance(payload, list):
+            raise ValueError("Expected list response from current odds endpoint")
+        return CurrentOddsPayload(
+            sport=sport,
+            fetched_at=datetime.now(timezone.utc),
+            events=[x for x in payload if isinstance(x, dict)],
+        )
 
     def historical_odds(
         self,
