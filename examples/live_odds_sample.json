@@ -1,0 +1,74 @@
+{
+  "sport": "soccer_test",
+  "fetched_at": "2026-09-18T12:00:00Z",
+  "events": [
+    {
+      "id": "evt1",
+      "commence_time": "2026-09-18T18:00:00Z",
+      "home_team": "Alpha",
+      "away_team": "Beta",
+      "bookmakers": [
+        {
+          "key": "a",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Alpha", "price": 2.00},
+                {"name": "Draw", "price": 3.50},
+                {"name": "Beta", "price": 4.00}
+              ]
+            },
+            {
+              "key": "totals",
+              "outcomes": [
+                {"name": "Over", "price": 1.90, "point": 2.5},
+                {"name": "Under", "price": 1.95, "point": 2.5}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "b",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Alpha", "price": 1.95},
+                {"name": "Draw", "price": 3.60},
+                {"name": "Beta", "price": 4.20}
+              ]
+            },
+            {
+              "key": "totals",
+              "outcomes": [
+                {"name": "Over", "price": 1.92, "point": 2.5},
+                {"name": "Under", "price": 1.93, "point": 2.5}
+              ]
+            }
+          ]
+        },
+        {
+          "key": "c",
+          "markets": [
+            {
+              "key": "h2h",
+              "outcomes": [
+                {"name": "Alpha", "price": 1.98},
+                {"name": "Draw", "price": 3.55},
+                {"name": "Beta", "price": 4.10}
+              ]
+            },
+            {
+              "key": "totals",
+              "outcomes": [
+                {"name": "Over", "price": 1.91, "point": 2.5},
+                {"name": "Under", "price": 1.94, "point": 2.5}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
