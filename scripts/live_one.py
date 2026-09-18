@@ -97,6 +97,7 @@ def main() -> None:
     p.add_argument("--min-books", type=int, default=3)
     p.add_argument("--min-ev", type=float, default=0.02)
     p.add_argument("--queue-top", type=int, default=3)
+    p.add_argument("--max-days", type=float, default=7.0, help="Ignore fixtures further than this horizon for the execution queue.")
     p.add_argument("--execution", help="Filled execution queue CSV, usually Napoleon")
     p.add_argument("--output-dir", default="live_output")
     args = p.parse_args()
@@ -177,6 +178,7 @@ def main() -> None:
         quotes,
         min_ev=args.min_ev,
         top=args.queue_top,
+        max_days_ahead=args.max_days,
         one_per_fixture=True,
     )
     queue_path = out_dir / "execution_queue.csv"
@@ -201,6 +203,7 @@ def main() -> None:
             "min_books": args.min_books,
             "min_ev": args.min_ev,
             "queue_top": args.queue_top,
+            "max_days": args.max_days,
         },
         "snapshots": snapshots,
         "market_quotes": [q.to_dict() for q in quotes],

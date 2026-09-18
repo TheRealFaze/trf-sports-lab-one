@@ -298,6 +298,7 @@ def build_execution_queue(
     top: int = 3,
     min_fair_odds: float = 1.25,
     max_fair_odds: float = 6.0,
+    max_days_ahead: float = 7.0,
     one_per_fixture: bool = True,
 ) -> List[ExecutionQueueItem]:
     """Prioritize a tiny manual Napoleon check queue.
@@ -308,10 +309,15 @@ def build_execution_queue(
     """
     if top < 1:
         return []
+    if max_days_ahead <= 0:
+        raise ValueError("max_days_ahead must be > 0")
 
     candidates: List[ExecutionQueueItem] = []
     for q in quotes:
         if not min_fair_odds <= q.fair_odds <= max_fair_odds:
+            continue
+        days_ahead = (q.commence_time - q.snapshot_time).total_seconds() / 86400.0
+        if days_ahead < 0 or days_ahead > max_days_ahead:
             continue
         threshold = required_execution_odds(q.fair_probability, min_ev)
         ratio = q.best_market_odds / threshold
