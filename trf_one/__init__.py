@@ -20,6 +20,15 @@ from .backtest import (
     calibration_bins,
     betting_summary,
 )
+from .market_scanner import (
+    MarketOutcomeInput,
+    ScannerConfig,
+    ScannedOutcome,
+    scan_market_group,
+    scan_markets,
+    derive_double_chance_probabilities,
+    assess_derived_price,
+)
 
 __all__ = [
     "devig",
@@ -43,4 +52,11 @@ __all__ = [
     "summarize_predictions",
     "calibration_bins",
     "betting_summary",
+    "MarketOutcomeInput",
+    "ScannerConfig",
+    "ScannedOutcome",
+    "scan_market_group",
+    "scan_markets",
+    "derive_double_chance_probabilities",
+    "assess_derived_price",
 ]

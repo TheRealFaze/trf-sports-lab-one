@@ -1,0 +1,43 @@
+name: launch-smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "trf_one/market_scanner.py"
+      - "scripts/launch_one.py"
+      - "examples/launch_market_sample.csv"
+      - ".github/workflows/launch-smoke.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "trf_one/market_scanner.py"
+      - "scripts/launch_one.py"
+      - "examples/launch_market_sample.csv"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Run launch sample
+        run: |
+          python scripts/launch_one.py examples/launch_market_sample.csv --output one_scan.json
+          python - <<'PY'
+          import json
+          d=json.load(open("one_scan.json",encoding="utf-8"))
+          assert d["status"]=="SHADOW-EXECUTION"
+          assert "qualified" in d and "all" in d
+          print("qualified",len(d["qualified"]))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-launch-smoke
+          path: one_scan.json
+          retention-days: 7
