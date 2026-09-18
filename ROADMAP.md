@@ -9,7 +9,7 @@
 - conservative Kelly helper
 - Airtable scientific ledger
 
-## v0.2 — Structural model ✅ on branch
+## v0.2 — Structural model ✅
 - historical match ingestion
 - strict chronological cutoff
 - time-decayed attack/defence strengths
@@ -18,18 +18,24 @@
 - optional xG-based target
 - low-sample uncertainty
 - deterministic model snapshots
-- reproducibility tests
 
-## v0.3 — Walk-forward laboratory
+## v0.3 — Walk-forward laboratory ✅ code / ⏳ real-data validation
 - chronological train/validation windows
-- fixture-by-fixture out-of-sample predictions
-- calibration curves
-- Brier / log loss / RPS where applicable
-- CLV tracking
-- ROI / yield / drawdown
-- market-vs-model blend learned out of sample
-- SHADOW promotion gates
-- parameter search performed only inside past training windows
+- fixture-level out-of-sample predictions
+- same-timestamp anti-leakage batching
+- calibration bins
+- Brier / log loss
+- historical 1X2 odds ingestion
+- market/model residual comparison
+- chronological market/model blend learning
+- CLV / ROI / yield / drawdown helpers
+
+### Remaining before promotion
+- choose historical football dataset
+- choose historical odds / closing-line source
+- run large real-data walk-forward
+- validate by competition and odds band
+- define promotion criteria from observed distributions, not arbitrary guesses
 
 ## v0.4+ — Specialist engines
 - corners

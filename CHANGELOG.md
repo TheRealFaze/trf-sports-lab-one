@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 — Walk-forward laboratory
+- Added strictly chronological walk-forward forecasts.
+- Added same-timestamp batching to prevent within-round leakage.
+- Added 1X2 Brier, log loss, accuracy and calibration helpers.
+- Added historical 1X2 quote ingestion.
+- Added de-vigged market-vs-model comparison.
+- Added geometric probability blending.
+- Added chronological blend-weight learning from prior out-of-sample observations only.
+- Added cold-start market-only behavior until calibration history is sufficient.
+- Added ROI, yield, max drawdown and price-CLV helpers.
+- Added explicit future-leakage tests.
+
 ## 0.2.0 — Structural model
 - Added CSV historical-match ingestion and data-quality summary.
 - Added strict `as_of` filtering to prevent future-match leakage.
