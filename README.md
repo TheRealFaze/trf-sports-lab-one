@@ -1,4 +1,4 @@
-# T.R.F SPORTS LAB ONE — Engine v0.2
+# T.R.F SPORTS LAB ONE — Engine v0.3
 
 A market-anchored football pricing engine designed to detect potential pricing discrepancies rather than manufacture picks.
 
@@ -10,66 +10,66 @@ A market-anchored football pricing engine designed to detect potential pricing d
 
 - proportional, power and Shin de-vig;
 - Poisson / Dixon-Coles score matrix;
-- 1X2, double-chance, totals, BTTS and team-to-score probabilities;
 - market-vs-model edge evaluation;
-- central and prudent EV;
-- fair price / prudent fair price;
-- robust / fragile / no-edge gate;
-- Brier and log-loss components;
-- conservative fractional Kelly helper.
+- central/prudent EV and fair prices;
+- Brier/log-loss helpers;
+- conservative fractional Kelly.
 
 ## v0.2 — structural model
 
-- historical match ingestion from a simple CSV contract;
-- strict `as_of` cutoff for walk-forward-safe fitting;
-- exponentially time-decayed matches;
-- learned attack and defence strengths;
-- learned global scoring level and home advantage;
-- deterministic Adam optimisation with L2 regularisation;
-- Dixon-Coles low-score rho fitted on a bounded deterministic grid;
-- optional goals, xG, or goals/xG-blend target;
-- approximate lambda uncertainty that widens for low-sample or unseen teams;
-- deterministic model snapshots and restoration;
-- synthetic tests for strength ordering, cutoff integrity and reproducibility.
+- historical match ingestion;
+- strict `as_of` cutoff;
+- time-decayed attack/defence strengths;
+- learned home advantage and scoring intercept;
+- Dixon-Coles low-score rho;
+- optional goals / xG / blended target;
+- low-sample lambda uncertainty;
+- deterministic model snapshots.
 
-## Data contract
+## v0.3 — walk-forward laboratory
 
-Minimum CSV columns:
+- expanding or rolling chronological walk-forward predictions;
+- same-timestamp batching to prevent within-round leakage;
+- out-of-sample 1X2 Brier score, log loss and accuracy;
+- binary calibration bins;
+- historical 1X2 quote ingestion;
+- de-vigged market-vs-model comparison;
+- geometric market/model probability blending;
+- blend weight learned only from earlier out-of-sample observations;
+- cold-start rule: market-only until enough history exists;
+- ROI / yield / max-drawdown / price-CLV helpers;
+- explicit tests that future results cannot change earlier forecasts.
+
+## Historical data contracts
+
+Match CSV:
 
 ```
-date,home_team,away_team,home_goals,away_goals
+date,home_team,away_team,home_goals,away_goals[,home_xg,away_xg]
 ```
 
-Optional:
+Historical 1X2 quote CSV:
 
 ```
-home_xg,away_xg
+date,home_team,away_team,home_odds,draw_odds,away_odds[,bookmaker,snapshot_type]
 ```
 
 ## Quick start
 
 ```bash
 pip install -e .
-python examples/demo.py
-python examples/structural_demo.py
 pytest -q
 ```
 
-## Current limitations
+## Scientific status
 
-v0.2 is a structural baseline, not a proven betting edge. In particular:
+**SHADOW.**
 
-- model-market blend weights are not calibrated yet;
-- uncertainty is approximate, not posterior uncertainty;
-- no automatic bookmaker-odds ingestion exists yet;
-- no walk-forward performance lab exists yet;
-- corners, cards and player markets still require specialist engines.
-
-Those belong to v0.3+ and must be validated out of sample.
+v0.3 gives us the machinery to test ONE correctly, but it does not itself prove an edge. Real historical match data plus contemporaneous and closing market prices are now required. Promotion to EDGE LAB depends on out-of-sample calibration, CLV, ROI and drawdown rather than a few winning bets.
 
 ## Airtable
 
-The research ledger lives in the connected Airtable base **T.R.F SPORTS LAB ONE**:
+The connected **T.R.F SPORTS LAB ONE** base contains:
 
 - `PICKS`
 - `MARKET SNAPSHOTS`
@@ -78,4 +78,4 @@ The research ledger lives in the connected Airtable base **T.R.F SPORTS LAB ONE*
 
 ## Governance
 
-Material changes receive a new model version. No model is promoted from SHADOW to EDGE LAB because of a few winning bets. Promotion depends on walk-forward calibration, CLV, ROI and drawdown evidence.
+Material changes receive a new model version. No tuning is allowed on final evaluation windows, and market/model blend weights must be learned using only information available before each evaluated fixture.
