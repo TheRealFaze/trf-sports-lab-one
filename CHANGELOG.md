@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 — Real-time market map + Napoleon soft gate
+- Added current The Odds API sport/odds endpoints.
+- Added per-book de-vig then multi-book fair consensus.
+- Added live 1X2 and exact-line totals market maps.
+- Added minimum execution-price thresholds for configured EV.
+- Added three-row Napoleon soft-gate queue by default.
+- Added execution-price assessment and SHADOW VALUE/PASS output.
+- Added offline payload fallback, tests and smoke workflow.
+- Added manual GitHub Action for live scans once THE_ODDS_API_KEY is configured.
+
 ## 0.6.0 — Operational market-first scanner
 - Added generic scanner for mutually exclusive market groups.
 - Added consensus de-vig vs execution-price comparison.
