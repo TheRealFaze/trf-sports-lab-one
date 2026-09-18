@@ -1,6 +1,6 @@
 # T.R.F SPORTS LAB ONE — Roadmap
 
-## v0.1 — Pricing core
+## v0.1 — Pricing core ✅
 - de-vig: proportional / power / Shin
 - Poisson + Dixon-Coles score matrix
 - market probabilities
@@ -9,23 +9,27 @@
 - conservative Kelly helper
 - Airtable scientific ledger
 
-## v0.2 — Structural model
-- ingest historical match dataset
+## v0.2 — Structural model ✅ on branch
+- historical match ingestion
+- strict chronological cutoff
 - time-decayed attack/defence strengths
 - home advantage
-- Dixon-Coles parameter fitting
-- optional xG-based target signal
-- team-strength uncertainty
+- Dixon-Coles rho fitting
+- optional xG-based target
+- low-sample uncertainty
 - deterministic model snapshots
+- reproducibility tests
 
 ## v0.3 — Walk-forward laboratory
 - chronological train/validation windows
+- fixture-by-fixture out-of-sample predictions
 - calibration curves
 - Brier / log loss / RPS where applicable
 - CLV tracking
 - ROI / yield / drawdown
 - market-vs-model blend learned out of sample
-- SHADOW mode promotion gates
+- SHADOW promotion gates
+- parameter search performed only inside past training windows
 
 ## v0.4+ — Specialist engines
 - corners
