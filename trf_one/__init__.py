@@ -3,6 +3,13 @@
 from .devig import devig, proportional_devig, power_devig, shin_devig
 from .poisson import score_matrix, market_probs_from_matrix
 from .edge import evaluate_edge, PickEvaluation
+from .structural import (
+    DixonColesStructuralModel,
+    MatchRecord,
+    StructuralConfig,
+    LambdaPrediction,
+    StructuralForecast,
+)
 
 __all__ = [
     "devig",
@@ -13,4 +20,9 @@ __all__ = [
     "market_probs_from_matrix",
     "evaluate_edge",
     "PickEvaluation",
+    "DixonColesStructuralModel",
+    "MatchRecord",
+    "StructuralConfig",
+    "LambdaPrediction",
+    "StructuralForecast",
 ]
