@@ -47,3 +47,7 @@ def test_team_normalizer_aliases():
     assert normalize_team_name("Man City") == normalize_team_name("Manchester City")
     assert normalize_team_name("Wolves") == normalize_team_name("Wolverhampton Wanderers")
     assert normalize_team_name("Ath Madrid") == normalize_team_name("Atletico Madrid")
+
+
+def test_understat_current_api_url():
+    assert UnderstatClient().url("EPL", 2019) == "https://understat.com/getLeagueData/EPL/2019"
