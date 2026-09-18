@@ -1,4 +1,4 @@
-# T.R.F SPORTS LAB ONE — Engine v0.3
+# T.R.F SPORTS LAB ONE — Engine v0.3.1
 
 A market-anchored football pricing engine designed to detect potential pricing discrepancies rather than manufacture picks.
 
@@ -40,6 +40,24 @@ A market-anchored football pricing engine designed to detect potential pricing d
 - ROI / yield / max-drawdown / price-CLV helpers;
 - explicit tests that future results cannot change earlier forecasts.
 
+## v0.3.1 — data-provider layer
+
+Selected stack:
+
+- **Football-Data.co.uk** — free historical bootstrap / first real backtest;
+- **Sportmonks** — production structural/process feed (fixtures, stats, xG, lineups);
+- **The Odds API** — production multi-book market map and historical snapshots.
+
+The paid providers are optional for bootstrapping. Start with the free historical dataset:
+
+```bash
+python scripts/bootstrap_football_data.py
+```
+
+The default bootstrap covers E0, D1, I1, SP1, F1, N1, B1 and P1 from 2019/20 through 2025/26 and writes normalized match, 1X2-odds and quality CSV files.
+
+Provider details and secret setup: `docs/DATA_PROVIDERS.md`.
+
 ## Historical data contracts
 
 Match CSV:
@@ -59,13 +77,14 @@ date,home_team,away_team,home_odds,draw_odds,away_odds[,bookmaker,snapshot_type]
 ```bash
 pip install -e .
 pytest -q
+python scripts/bootstrap_football_data.py
 ```
 
 ## Scientific status
 
 **SHADOW.**
 
-v0.3 gives us the machinery to test ONE correctly, but it does not itself prove an edge. Real historical match data plus contemporaneous and closing market prices are now required. Promotion to EDGE LAB depends on out-of-sample calibration, CLV, ROI and drawdown rather than a few winning bets.
+The engine now has the code path from raw historical results/odds to a real walk-forward lab. That still does not prove an edge. Promotion to EDGE LAB depends on out-of-sample calibration, market-relative Brier/log loss, CLV, ROI and drawdown evidence.
 
 ## Airtable
 
