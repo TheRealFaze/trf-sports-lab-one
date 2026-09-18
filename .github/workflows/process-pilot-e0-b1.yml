@@ -1,0 +1,41 @@
+name: process-pilot-e0-b1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/process-pilot-e0-b1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Bootstrap E0+B1
+        run: |
+          python scripts/bootstrap_football_data.py \
+            --output data/process-pilot \
+            --divisions E0 B1 \
+            --years 2019 2020 2021 2022 2023 2024 2025
+      - name: Run quarterly process pilot
+        run: |
+          python scripts/run_process_enrichment_audit.py \
+            --process data/process-pilot/process.csv \
+            --odds data/process-pilot/odds_1x2.csv \
+            --output data/process-pilot/process_pilot.json
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trf-process-pilot-e0-b1
+          path: data/process-pilot/process_pilot.json
+          retention-days: 30
